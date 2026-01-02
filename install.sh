@@ -62,23 +62,13 @@ sudo -u "${AIRFLOW_USER}" "${AIRFLOW_VENV}/bin/pip" install \
   "apache-airflow[postgres]==${AIRFLOW_VERSION}" \
   --constraint "${CONSTRAINTS_URL}"
 
-sudo -u postgres psql <<SQL
-DO \$\$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${AIRFLOW_DB_USER}') THEN
-    CREATE USER ${AIRFLOW_DB_USER} WITH PASSWORD '${AIRFLOW_DB_PASS}';
-  END IF;
-END \$\$;
-SQL
+if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='${AIRFLOW_DB_USER}'" | grep -q 1; then
+  sudo -u postgres psql -c "CREATE USER ${AIRFLOW_DB_USER} WITH PASSWORD '${AIRFLOW_DB_PASS}'"
+fi
 
-sudo -u postgres psql <<SQL
-DO \$\$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '${AIRFLOW_DB_NAME}') THEN
-    CREATE DATABASE ${AIRFLOW_DB_NAME} OWNER ${AIRFLOW_DB_USER};
-  END IF;
-END \$\$;
-SQL
+if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='${AIRFLOW_DB_NAME}'" | grep -q 1; then
+  sudo -u postgres psql -c "CREATE DATABASE ${AIRFLOW_DB_NAME} OWNER ${AIRFLOW_DB_USER}"
+fi
 
 SQL_ALCHEMY_CONN="postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASS}@${AIRFLOW_DB_HOST}/${AIRFLOW_DB_NAME}"
 
@@ -90,10 +80,19 @@ export AIRFLOW__CORE__LOAD_EXAMPLES="False"
 export AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL="30"
 export AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL="60"
 
-sudo -u "${AIRFLOW_USER}" "${AIRFLOW_VENV}/bin/airflow" db init
+sudo -u "${AIRFLOW_USER}" env \
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="${SQL_ALCHEMY_CONN}" \
+  AIRFLOW__CORE__EXECUTOR="LocalExecutor" \
+  AIRFLOW__CORE__DAGS_FOLDER="${AIRFLOW_DAGS}" \
+  AIRFLOW__CORE__LOAD_EXAMPLES="False" \
+  AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL="30" \
+  AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL="60" \
+  "${AIRFLOW_VENV}/bin/airflow" db migrate
 
-if ! sudo -u "${AIRFLOW_USER}" "${AIRFLOW_VENV}/bin/airflow" users list | awk '{print $2}' | grep -qx "${AIRFLOW_ADMIN_USER}"; then
-  sudo -u "${AIRFLOW_USER}" "${AIRFLOW_VENV}/bin/airflow" users create \
+if ! sudo -u "${AIRFLOW_USER}" env AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="${SQL_ALCHEMY_CONN}" \
+  "${AIRFLOW_VENV}/bin/airflow" users list | awk '{print $2}' | grep -qx "${AIRFLOW_ADMIN_USER}"; then
+  sudo -u "${AIRFLOW_USER}" env AIRFLOW__DATABASE__SQL_ALCHEMY_CONN="${SQL_ALCHEMY_CONN}" \
+    "${AIRFLOW_VENV}/bin/airflow" users create \
     --username "${AIRFLOW_ADMIN_USER}" \
     --firstname "${AIRFLOW_ADMIN_FIRSTNAME}" \
     --lastname "${AIRFLOW_ADMIN_LASTNAME}" \
