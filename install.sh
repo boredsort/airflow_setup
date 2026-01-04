@@ -54,14 +54,13 @@ if [ ! -d "${AIRFLOW_VENV}" ]; then
   sudo -u "${AIRFLOW_USER}" python3 -m venv "${AIRFLOW_VENV}"
 fi
 
-sudo -u "${AIRFLOW_USER}" "${AIRFLOW_VENV}/bin/pip" install --upgrade pip setuptools wheel
+sudo -u "${AIRFLOW_USER}" bash -c "source \"${AIRFLOW_VENV}/bin/activate\" && pip install --upgrade pip setuptools wheel"
 
 PY_VER="$("${AIRFLOW_VENV}/bin/python" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
 CONSTRAINTS_URL="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PY_VER}.txt"
 
 if [ -f "${REQUIREMENTS_FILE}" ]; then
-  sudo -u "${AIRFLOW_USER}" "${AIRFLOW_VENV}/bin/pip" install -r "${REQUIREMENTS_FILE}" \
-    --constraint "${CONSTRAINTS_URL}"
+  sudo -u "${AIRFLOW_USER}" bash -c "source \"${AIRFLOW_VENV}/bin/activate\" && pip install -r \"${REQUIREMENTS_FILE}\" --constraint \"${CONSTRAINTS_URL}\""
 else
   sudo -u "${AIRFLOW_USER}" "${AIRFLOW_VENV}/bin/pip" install \
     "apache-airflow[postgres]==${AIRFLOW_VERSION}" \
