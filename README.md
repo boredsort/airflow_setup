@@ -50,7 +50,7 @@ ssh-keygen -t ed25519 -C "airflow-dags"
 
 Add your public key (run from your local machine):
 ```bash
-ssh-copy-id -i ~/.ssh/id_ed25519.pub airflow@your-server
+ssh-copy-id -i ~/.ssh/id_ed25519.pub root@your-server
 ```
 
 Push from your local repo:
