@@ -53,6 +53,14 @@ Add your public key (run from your local machine):
 ssh-copy-id -i ~/.ssh/id_ed25519.pub root@your-server
 ```
 
+Add your public key on the server:
+```bash
+sudo mkdir -p /opt/airflow/.ssh
+sudo chmod 700 /opt/airflow/.ssh
+sudo tee -a /opt/airflow/.ssh/authorized_keys < /path/to/your/id_ed25519.pub
+sudo chmod 600 /opt/airflow/.ssh/authorized_keys
+sudo chown -R airflow:airflow /opt/airflow/.ssh
+
 Push from your local repo:
 ```bash
 git remote add hetzner airflow@your-server:/opt/airflow/dags.git

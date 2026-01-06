@@ -41,7 +41,7 @@ if [ "${AIRFLOW_DB_PASS}" = "CHANGE_ME" ]; then
 fi
 
 apt update
-apt install -y python3-venv python3-dev build-essential libpq-dev git postgresql
+apt install -y python3-venv python3-dev build-essential libpq-dev git postgresql rclone
 
 if ! id "${AIRFLOW_USER}" >/dev/null 2>&1; then
   useradd --system --home "${AIRFLOW_HOME}" --shell /bin/bash "${AIRFLOW_USER}"
